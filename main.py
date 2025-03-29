@@ -6,13 +6,14 @@ import mediapipe as mp
 import tensorflow as tf
 import json
 import os
+import threading
+import time
 from sklearn.model_selection import train_test_split
 
 GESTURE_FOLDER = 'gestures'
 MODEL_FOLDER = 'models'
 os.makedirs(GESTURE_FOLDER, exist_ok=True)
 os.makedirs(MODEL_FOLDER, exist_ok=True)
-
 
 
 def normalize_landmarks(landmarks):
@@ -22,6 +23,210 @@ def normalize_landmarks(landmarks):
     if max_value > 0:
         normalized_landmarks = [(x / max_value, y / max_value) for x, y in normalized_landmarks]
     return normalized_landmarks
+
+
+latest_predictions = []  # Store predictions
+latest_boxes = []  # Store boxes for each hand
+latest_frames = None
+last_prediction_time = 0
+prediction_interval = 0.1  # Minimum interval between predictions (in seconds)
+prediction_ready = threading.Event()  # Event to trigger predictions
+
+
+prediction_lock = threading.Lock()
+
+
+def predict_gesture(landmarks, model, label_map):
+    normalized = normalize_landmarks(landmarks)
+    prediction = model.predict(np.array([np.array(normalized).flatten()]))
+    idx = np.argmax(prediction)
+    label = list(label_map.keys())[list(label_map.values()).index(idx)]
+    return label
+
+
+def prediction_thread_function(model, label_map):
+    global latest_frames, latest_predictions, latest_boxes, last_prediction_time
+    mp_hands = mp.solutions.hands
+    hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+    while True:
+        prediction_ready.wait()
+
+        if latest_frames is None:
+            prediction_ready.clear()
+            continue
+
+        frame_rgb = cv2.cvtColor(latest_frames, cv2.COLOR_BGR2RGB)
+        results = hands.process(frame_rgb)
+
+        current_time = time.time()
+        make_prediction = current_time - last_prediction_time >= prediction_interval
+        
+        if results.multi_hand_landmarks:
+            current_predictions = []
+            current_boxes = []
+            
+            for hand_landmarks in results.multi_hand_landmarks:
+                landmarks = [(lm.x, lm.y, lm.z) for lm in hand_landmarks.landmark]
+                x_vals = [lm.x for lm in hand_landmarks.landmark]
+                y_vals = [lm.y for lm in hand_landmarks.landmark]
+
+                # Only predict if enough time has passed
+                if make_prediction:
+                    label = predict_gesture(landmarks, model, label_map)
+                else:
+                    # Maintain previous label if we have one for this hand position
+                    # This is simplified - in real code you'd want to track hands between frames
+                    label = ""
+                    if latest_predictions:
+                        for prev_pred, prev_box in zip(latest_predictions, latest_boxes):
+                            prev_x, prev_y = prev_box
+                            # Check if this hand is close to a previous hand
+                            if (abs(np.mean(x_vals) - np.mean(prev_x)) < 0.1 and 
+                                abs(np.mean(y_vals) - np.mean(prev_y)) < 0.1):
+                                label = prev_pred['label']
+                                break
+
+                current_predictions.append({
+                    'label': label,
+                    'skeleton': hand_landmarks
+                })
+                current_boxes.append((x_vals, y_vals))
+            
+            # Update the last prediction time only when we actually make predictions
+            if make_prediction:
+                last_prediction_time = current_time
+
+            with prediction_lock:
+                latest_predictions = current_predictions
+                latest_boxes = current_boxes
+
+        # If no hands are detected, we should clear predictions
+        elif make_prediction:
+            with prediction_lock:
+                latest_predictions = []
+                latest_boxes = []
+                last_prediction_time = current_time
+                
+        prediction_ready.clear()
+
+
+
+def prediction_mode():
+    global latest_predictions, latest_boxes, latest_frames
+
+    print("Prediction Mode")
+    model = tf.keras.models.load_model(os.path.join(MODEL_FOLDER, 'gesture_model.h5'))
+    with open(os.path.join(MODEL_FOLDER, 'label_map.json'), 'r') as f:
+        label_map = json.load(f)
+
+    cap = cv2.VideoCapture(0)
+
+    pygame.init()
+    width, height = 640, 480
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption("Prediction Mode")
+    clock = pygame.time.Clock()
+    mp_drawing = mp.solutions.drawing_utils
+    mp_hands = mp.solutions.hands
+
+    # Initialize global variables
+    latest_predictions = []
+    latest_boxes = []
+
+    prediction_thread = threading.Thread(target=prediction_thread_function, args=(model, label_map), daemon=True)
+    prediction_thread.start()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        latest_frames = frame.copy()
+        prediction_ready.set()
+
+        frame_output = frame.copy()
+
+        with prediction_lock:
+            # Draw boxes and labels for all detected hands
+            for i, (pred, (x_vals, y_vals)) in enumerate(zip(latest_predictions, latest_boxes)):
+                label = pred['label']
+                skeleton = pred['skeleton']
+                h, w, _ = frame.shape
+                x_min = int(min(x_vals) * w)
+                x_max = int(max(x_vals) * w)
+                y_min = int(min(y_vals) * h)
+                y_max = int(max(y_vals) * h)
+
+                # Always draw the bounding box, regardless of whether we have a label
+                box_color = (0, 255, 0) if label else (255, 0, 0)  # Green if labeled, red if not
+                cv2.rectangle(frame_output, (x_min, y_min), (x_max, y_max), box_color, 2)
+                
+                if label:  # Only draw the label text if available
+                    cv2.putText(frame_output, label, (x_min, y_min - 10), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, box_color, 2)
+
+                # Draw hand skeleton
+                mp_drawing.draw_landmarks(frame_output, skeleton, mp_hands.HAND_CONNECTIONS)
+
+        # Show frame counter and number of detected hands
+        # cv2.putText(frame_output, f"Hands: {len(latest_predictions)}", (10, 30), 
+        #           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+        frame_output = cv2.cvtColor(frame_output, cv2.COLOR_BGR2RGB)
+        frame_output = np.fliplr(frame_output)
+        frame_output = np.rot90(frame_output)
+        frame_surface = pygame.surfarray.make_surface(frame_output)
+        screen.blit(frame_surface, (0, 0))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
+                cap.release()
+                pygame.quit()
+                return
+
+
+
+
+def training_mode():
+    print("Training Mode")
+    X, y, label_map = [], [], {}
+    for idx, gesture in enumerate(os.listdir(GESTURE_FOLDER)):
+        label_map[gesture] = idx
+        folder_path = os.path.join(GESTURE_FOLDER, gesture)
+        for file in os.listdir(folder_path):
+            if file.endswith('.json'):
+                with open(os.path.join(folder_path, file), 'r') as f:
+                    data = json.load(f)
+                    X.append(np.array(data).flatten())
+                    y.append(idx)
+
+    if len(set(y)) < 2:
+        print("Need at least two gestures to train.")
+        return
+
+    X, y = np.array(X), np.array(y)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(42,)),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dense(len(label_map), activation='softmax')
+    ])
+
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10)
+
+    model.save(os.path.join(MODEL_FOLDER, 'gesture_model.h5'))
+    with open(os.path.join(MODEL_FOLDER, 'label_map.json'), 'w') as f:
+        json.dump(label_map, f)
+    print("Model saved to models/gesture_model.h5")
+
+
 
 def data_collection_mode():
     print("Data Collection Mode")
@@ -84,105 +289,6 @@ def data_collection_mode():
         # Convert and display frame in Pygame
         frame_output = cv2.cvtColor(frame_output, cv2.COLOR_BGR2RGB)
         frame_output = np.fliplr(frame_output)  # Mirror effect
-        frame_output = np.rot90(frame_output)
-        frame_surface = pygame.surfarray.make_surface(frame_output)
-        screen.blit(frame_surface, (0, 0))
-
-        pygame.display.flip()
-        clock.tick(30)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
-                cap.release()
-                hands.close()
-                pygame.quit()
-                return
-
-
-def training_mode():
-    print("Training Mode")
-    X, y, label_map = [], [], {}
-    for idx, gesture in enumerate(os.listdir(GESTURE_FOLDER)):
-        label_map[gesture] = idx
-        folder_path = os.path.join(GESTURE_FOLDER, gesture)
-        for file in os.listdir(folder_path):
-            if file.endswith('.json'):
-                with open(os.path.join(folder_path, file), 'r') as f:
-                    data = json.load(f)
-                    X.append(np.array(data).flatten())
-                    y.append(idx)
-
-    if len(set(y)) < 2:
-        print("Need at least two gestures to train.")
-        return
-
-    X, y = np.array(X), np.array(y)
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = tf.keras.Sequential([
-        tf.keras.layers.Input(shape=(42,)),
-        tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(len(label_map), activation='softmax')
-    ])
-
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10)
-
-    model.save(os.path.join(MODEL_FOLDER, 'gesture_model.h5'))
-    with open(os.path.join(MODEL_FOLDER, 'label_map.json'), 'w') as f:
-        json.dump(label_map, f)
-    print("Model saved to models/gesture_model.h5")
-
-
-
-
-def prediction_mode():
-    print("Prediction Mode")
-    model = tf.keras.models.load_model(os.path.join(MODEL_FOLDER, 'gesture_model.h5'))
-    with open(os.path.join(MODEL_FOLDER, 'label_map.json'), 'r') as f:
-        label_map = json.load(f)  # Load label map as-is, without converting keys to integers
-
-    cap = cv2.VideoCapture(0)
-    mp_hands = mp.solutions.hands
-    hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-    mp_drawing = mp.solutions.drawing_utils
-
-    pygame.init()
-    width, height = 640, 480
-    screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Prediction Mode")
-    clock = pygame.time.Clock()
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(frame_rgb)
-        frame_output = frame.copy()
-
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                mp_drawing.draw_landmarks(frame_output, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                landmarks = [(lm.x, lm.y, lm.z) for lm in hand_landmarks.landmark]
-                normalized = normalize_landmarks(landmarks)
-                prediction = model.predict(np.array([np.array(normalized).flatten()]))
-                idx = np.argmax(prediction)
-                label = list(label_map.keys())[list(label_map.values()).index(idx)]
-
-                h, w, _ = frame.shape
-                x_min = int(min([lm.x for lm in hand_landmarks.landmark]) * w)
-                x_max = int(max([lm.x for lm in hand_landmarks.landmark]) * w)
-                y_min = int(min([lm.y for lm in hand_landmarks.landmark]) * h)
-                y_max = int(max([lm.y for lm in hand_landmarks.landmark]) * h)
-
-                cv2.rectangle(frame_output, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-                cv2.putText(frame_output, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-        frame_output = cv2.cvtColor(frame_output, cv2.COLOR_BGR2RGB)
-        frame_output = np.fliplr(frame_output)
         frame_output = np.rot90(frame_output)
         frame_surface = pygame.surfarray.make_surface(frame_output)
         screen.blit(frame_surface, (0, 0))
