@@ -11,7 +11,7 @@ import time
 from sklearn.model_selection import train_test_split
 import json
 import os
-
+# testing blablbahl
 BINDINGS_FILE = "gesture_bindings.json"
 GESTURE_FOLDER = 'gestures'
 MODEL_FOLDER = 'models'
