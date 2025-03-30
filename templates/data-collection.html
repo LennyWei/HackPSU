@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gesture Data Collection</title>
+</head>
+<body>
+    <h1>Gesture Data Collection</h1>
+
+    <!-- Webcam feed -->
+    <h2>Live Camera Feed</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480" style="border: 2px solid gray; border-radius: 10px;" />
+
+    <!-- Gesture input and button -->
+    <div>
+        <input type="text" id="gesture-name" placeholder="Enter gesture name">
+        <button onclick="collectData()">Collect Frame</button>
+    </div>
+
+    <script>
+        function collectData() {
+            const gestureName = document.getElementById("gesture-name").value;
+            if (!gestureName) {
+                alert("Please enter a gesture name.");
+                return;
+            }
+
+            fetch('/get_landmarks')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    fetch('/collect_data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            gesture: gestureName,
+                            landmarks: data.landmarks
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(result => alert(result.message));
+                });
+        }
+    </script>
+</body>
+</html>

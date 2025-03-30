@@ -1,12 +1,60 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gesture Recognition</title>
+    <link rel = "stylesheet" href = "styles.css">
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Gesture Recognition</h1>
-    <img src="{{ url_for('video_feed') }}" width="640px" height="480px">
+
+         Video Feed 
+    <h2>Live Video Feed</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480" />
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gesture AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Penn State Logo">
+    </a>      
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+      <div class="nav-buttons">
+        <button class="sign-in">Sign in</button>
+        <button class="register">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <img src="{{ url_for('static', filename='home.png') }}" alt="Gesture AI Image">
+    <h1>Gesture AI</h1>
+    <p>
+      Train - Trains the data that you have collected<br>
+      Data Collection - Collects data for gestures you want to train<br>
+      Testing - Tests to check if gestures work
+    </p>
+  </div>
 </body>
 </html>
+

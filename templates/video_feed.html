@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Gesture Prediction</title>
+</head>
+<body>
+    <h2>Live Video Feed</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480" />
+
+    <h3 id="prediction">Prediction: Waiting...</h3>
+
+    <script>
+        // Poll prediction every 1 second
+        setInterval(() => {
+            fetch('/get_prediction')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('prediction').innerText = "Prediction: " + data.prediction;
+                })
+                .catch(err => console.error("Prediction fetch failed:", err));
+        }, 1000);
+    </script>
+</body>
+</html>

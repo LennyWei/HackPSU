@@ -1,0 +1,142 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Body */
+body {
+  background: #f5f5f5;
+  color: #111;
+}
+
+/* Navbar */
+.navbar {
+  background: #fff;
+  border-bottom: 2px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: left;
+  padding: 16px 48px;
+}
+
+/* Left side logo */
+.navbar .logo {
+  display: block;
+  background: #fff;
+}
+
+.navbar .logo img {
+  height: 60px;
+  margin-right: 12px;
+}
+
+.navbar .logo span {
+  font-size: 240px;
+  font-weight: 600;
+  color: #002D74;
+}
+
+/* Right side links */
+.navbar .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.navbar .nav-links a {
+  text-decoration: none;
+  color: #333;
+  /* font-size: 16px; */
+}
+
+.navbar .nav-buttons button {
+  margin-left: 12px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.navbar .nav-buttons .sign-in {
+  background: #eee;
+}
+
+.navbar .nav-buttons .register {
+  background: #111;
+  color: white;
+}
+
+/* Main content */
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 64px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.main img {
+  width: 300px;
+  max-width: 90%;
+}
+
+.main h1 {
+  margin-top: 24px;
+  font-size: 48px;
+  font-weight: 700;
+}
+
+.main p {
+  margin-top: 48px;
+  font-size: 16px;
+  line-height: 1.8;
+  max-width: 600px;
+  color: #444;
+}
+
+/* Hover style updates */
+.nav-links a:hover,
+.nav-buttons button:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Optional: active page highlight */
+.nav-links a:active,
+.nav-buttons button:active {
+  transform: scale(0.97);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo span {
+  font-size: 24px;
+  font-weight: 600;
+  color: #002D74;
+}
+
+/* Video Feed */
+.video-container {
+  margin-top: 32px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.webcam-feed {
+  width: 640px;
+  max-width: 90%;
+  border-radius: 8px;
+}
