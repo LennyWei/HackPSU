@@ -4,9 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gesture Recognition</title>
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Gesture Recognition</h1>
-    <img src="{{ url_for('video_feed') }}" width="640px" height="480px">
+
+    <!-- Video Feed -->
+    <h2>Live Video Feed</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480" />
 </body>
 </html>
