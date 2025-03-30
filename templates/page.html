@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('home') }}" class="logo">
+        <img src="{{ url_for('static', filename='image.png') }}" alt="Penn State Logo">
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+      <div class="nav-buttons">
+        <button class="sign-in">Sign in</button>
+        <button class="register">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <h1>{{ title }}</h1>
+  
+    {% if title == "Train" or title == "Test" %}
+      <div class="video-container">
+        <img src="{{ url_for('video_feed') }}" alt="Live Feed" class="webcam-feed">
+      </div>
+    {% endif %}
+  </div>  
+</body>
+</html>

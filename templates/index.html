@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gesture AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('home') }}" class="logo">
+        <img src="{{ url_for('static', filename='image.png') }}" alt="Penn State Logo">
+    </a>      
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+      <div class="nav-buttons">
+        <button class="sign-in">Sign in</button>
+        <button class="register">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <img src="{{ url_for('static', filename='image2.png') }}" alt="Gesture AI Image">
+    <h1>Gesture AI</h1>
+    <p>
+      Train - Trains the data that you have collected<br>
+      Data Collection - Collects data for gestures you want to train<br>
+      Testing - Tests to check if gestures work
+    </p>
+  </div>
+</body>
+</html>
