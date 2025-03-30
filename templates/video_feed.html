@@ -1,25 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Live Gesture Prediction</title>
+  <meta charset="UTF-8">
+  <title>Live Gesture Prediction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+    </div>
+  </div>
+
+  <div class="main">
     <h2>Live Video Feed</h2>
-    <img src="{{ url_for('video_feed') }}" width="640" height="480" />
-
+    <img src="{{ url_for('video_feed') }}" class="webcam-feed" />
     <h3 id="prediction">Prediction: Waiting...</h3>
+  </div>
 
-    <script>
-        // Poll prediction every 1 second
-        setInterval(() => {
-            fetch('/get_prediction')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('prediction').innerText = "Prediction: " + data.prediction;
-                })
-                .catch(err => console.error("Prediction fetch failed:", err));
-        }, 1000);
-    </script>
+  <script>
+    setInterval(() => {
+      fetch('/get_prediction')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('prediction').innerText = "Prediction: " + data.prediction;
+        })
+        .catch(err => console.error("Prediction fetch failed:", err));
+    }, 1000);
+  </script>
 </body>
 </html>

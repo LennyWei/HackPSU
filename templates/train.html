@@ -1,31 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Train Model</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <title>Train Gesture Model</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+    </div>
+  </div>
+
+  <div class="main">
     <h1>Train Gesture Model</h1>
-    <p>Click the button below to start training the gesture recognition model. Make sure you have at least two gesture classes collected.</p>
+    <p>Click the button below to start training. Make sure at least two gestures are collected.</p>
     <button id="trainBtn">Train Model</button>
     <p id="trainStatus"></p>
+  </div>
 
-    <script>
-        document.getElementById("trainBtn").addEventListener("click", () => {
-            document.getElementById("trainStatus").textContent = "Training started...";
-            fetch("/train_model", {
-                method: "POST"
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("trainStatus").textContent = data.message;
-            })
-            .catch(error => {
-                document.getElementById("trainStatus").textContent = "Error: " + error;
-            });
+  <script>
+    document.getElementById("trainBtn").addEventListener("click", () => {
+      document.getElementById("trainStatus").textContent = "Training started...";
+      fetch("/train_model", { method: "POST" })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("trainStatus").textContent = data.message;
+        })
+        .catch(error => {
+          document.getElementById("trainStatus").textContent = "Error: " + error;
         });
-    </script>
+    });
+  </script>
 </body>
 </html>

@@ -1,50 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Gesture Data Collection</title>
+  <meta charset="UTF-8">
+  <title>Gesture Data Collection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Gesture Data Collection</h1>
-
-    <!-- Webcam feed -->
-    <h2>Live Camera Feed</h2>
-    <img src="{{ url_for('video_feed') }}" width="640" height="480" style="border: 2px solid gray; border-radius: 10px;" />
-
-    <!-- Gesture input and button -->
-    <div>
-        <input type="text" id="gesture-name" placeholder="Enter gesture name">
-        <button onclick="collectData()">Collect Frame</button>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Penn State Logo">
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
     </div>
+  </div>
 
-    <script>
-        function collectData() {
-            const gestureName = document.getElementById("gesture-name").value;
-            if (!gestureName) {
-                alert("Please enter a gesture name.");
-                return;
-            }
+  <div class="main">
+    <h1>Gesture Data Collection</h1>
+    <img src="{{ url_for('video_feed') }}" class="webcam-feed" />
+    <div style="margin-top: 20px;">
+      <input type="text" id="gesture-name" placeholder="Enter gesture name">
+      <button onclick="collectData()">Collect Frame</button>
+    </div>
+  </div>
 
-            fetch('/get_landmarks')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
+  <script>
+    function collectData() {
+      const gestureName = document.getElementById("gesture-name").value;
+      if (!gestureName) return alert("Please enter a gesture name.");
 
-                    fetch('/collect_data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            gesture: gestureName,
-                            landmarks: data.landmarks
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(result => alert(result.message));
-                });
-        }
-    </script>
+      fetch('/get_landmarks')
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) return alert(data.error);
+
+          fetch('/collect_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gesture: gestureName,
+              landmarks: data.landmarks
+            })
+          })
+          .then(res => res.json())
+          .then(result => alert(result.message));
+        });
+    }
+  </script>
 </body>
 </html>

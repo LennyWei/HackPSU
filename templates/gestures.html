@@ -1,77 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gesture Key Bindings</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <title>Gesture Key Bindings</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+    </div>
+  </div>
+
+  <div class="main">
     <h1>Gesture Key Bindings</h1>
 
-    <form id="bindingForm" method="POST" action="/bind_gesture">
-        <label for="gestureSelect">Select Gesture:</label>
-        <select id="gestureSelect" name="gesture" required></select>
+    <form method="POST" action="/bind_gesture">
+      <label for="gestureSelect">Select Gesture:</label>
+      <select id="gestureSelect" name="gesture" required></select>
 
-        <label for="key">Bind to Key:</label>
-        <input type="text" id="key" name="key" required>
+      <label for="key">Bind to Key:</label>
+      <input type="text" id="key" name="key" required>
 
-        <button type="submit">Bind</button>
+      <button type="submit">Bind</button>
     </form>
 
     <h2>Current Bindings</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Gesture</th>
-                <th>Key</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="bindingsTable"></tbody>
+    <table class="bindings-table">
+      <thead>
+        <tr>
+          <th>Gesture</th>
+          <th>Key</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="bindingsTable"></tbody>
     </table>
+  </div>
 
-    <script>
-        const gestures = {{ gestures_list | tojson | safe }};
+  <script>
+    const gestures = {{ gestures_list | tojson | safe }};
+    const dropdown = document.getElementById("gestureSelect");
+    gestures.forEach(g => {
+      const option = document.createElement("option");
+      option.value = g;
+      option.textContent = g;
+      dropdown.appendChild(option);
+    });
 
-        const dropdown = document.getElementById("gestureSelect");
-        gestures.forEach(gesture => {
-            const option = document.createElement("option");
-            option.value = gesture;
-            option.textContent = gesture;
-            dropdown.appendChild(option);
-        });
-
-        // Load bindings via fetch (AJAX)
-        fetch('/get_bindings')
-            .then(res => res.json())
-            .then(bindings => {
-                const table = document.getElementById("bindingsTable");
-                for (const gesture in bindings) {
-                    const row = document.createElement("tr");
-
-                    const gestureCell = document.createElement("td");
-                    gestureCell.textContent = gesture;
-                    row.appendChild(gestureCell);
-
-                    const keyCell = document.createElement("td");
-                    keyCell.textContent = bindings[gesture];
-                    row.appendChild(keyCell);
-
-                    const deleteCell = document.createElement("td");
-                    const form = document.createElement("form");
-                    form.method = "POST";
-                    form.action = "/delete_binding";
-                    form.innerHTML = `
-                        <input type="hidden" name="gesture" value="${gesture}">
-                        <button type="submit">Delete</button>
-                    `;
-                    deleteCell.appendChild(form);
-                    row.appendChild(deleteCell);
-
-                    table.appendChild(row);
-                }
-            });
-    </script>
+    fetch('/get_bindings')
+      .then(res => res.json())
+      .then(bindings => {
+        const table = document.getElementById("bindingsTable");
+        for (const gesture in bindings) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${gesture}</td>
+            <td>${bindings[gesture]}</td>
+            <td>
+              <form method="POST" action="/delete_binding">
+                <input type="hidden" name="gesture" value="${gesture}">
+                <button type="submit">Delete</button>
+              </form>
+            </td>
+          `;
+          table.appendChild(row);
+        }
+      });
+  </script>
 </body>
 </html>
