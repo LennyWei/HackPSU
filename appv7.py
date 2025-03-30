@@ -35,18 +35,13 @@ if os.path.exists(MODEL_PATH) and os.path.exists(LABEL_MAP_PATH):
         label_map = json.load(f)
 
 # Initialize the webcam
-cap = cv2.VideoCapture(0)  # Use cv2.CAP_DSHOW for Windows systems
+cap = cv2.VideoCapture(0)
 
-# Set the desired resolution
-desired_width = 1920  # Example width
-desired_height = 1080  # Example height
+desired_width = 1920 
+desired_height = 1080 
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
 
-# Verify if the resolution is set correctly
-# actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-# actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-# print(f"Resolution set to: {actual_width}x{actual_height}")
 
 
 mp_hands = mp.solutions.hands
