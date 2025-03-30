@@ -1,5 +1,5 @@
-
 import cv2
+import pyautogui
 import pygame
 import numpy as np
 import mediapipe as mp
@@ -9,7 +9,10 @@ import os
 import threading
 import time
 from sklearn.model_selection import train_test_split
-
+import json
+import os
+# testing blablbahl
+BINDINGS_FILE = "gesture_bindings.json"
 GESTURE_FOLDER = 'gestures'
 MODEL_FOLDER = 'models'
 os.makedirs(GESTURE_FOLDER, exist_ok=True)
@@ -24,6 +27,11 @@ def normalize_landmarks(landmarks):
         normalized_landmarks = [(x / max_value, y / max_value) for x, y in normalized_landmarks]
     return normalized_landmarks
 
+def load_bindings():
+    if os.path.exists(BINDINGS_FILE):
+        with open(BINDINGS_FILE, "r") as file:
+            return json.load(file)
+    return {}
 
 latest_predictions = []  # Store predictions
 latest_boxes = []  # Store boxes for each hand
@@ -35,6 +43,10 @@ prediction_ready = threading.Event()  # Event to trigger predictions
 
 prediction_lock = threading.Lock()
 
+current_gesture = None
+current_gesture_count = 0
+gesture_accept_count = 5
+bindings = load_bindings()
 
 def predict_gesture(landmarks, model, label_map):
     normalized = normalize_landmarks(landmarks)
@@ -46,6 +58,7 @@ def predict_gesture(landmarks, model, label_map):
 
 def prediction_thread_function(model, label_map):
     global latest_frames, latest_predictions, latest_boxes, last_prediction_time
+    global current_gesture, current_gesture_count
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
@@ -61,11 +74,11 @@ def prediction_thread_function(model, label_map):
 
         current_time = time.time()
         make_prediction = current_time - last_prediction_time >= prediction_interval
-        
+
         if results.multi_hand_landmarks:
             current_predictions = []
             current_boxes = []
-            
+
             for hand_landmarks in results.multi_hand_landmarks:
                 landmarks = [(lm.x, lm.y, lm.z) for lm in hand_landmarks.landmark]
                 x_vals = [lm.x for lm in hand_landmarks.landmark]
@@ -83,7 +96,7 @@ def prediction_thread_function(model, label_map):
                             prev_x, prev_y = prev_box
                             # Check if this hand is close to a previous hand
                             if (abs(np.mean(x_vals) - np.mean(prev_x)) < 0.1 and 
-                                abs(np.mean(y_vals) - np.mean(prev_y)) < 0.1):
+                                    abs(np.mean(y_vals) - np.mean(prev_y)) < 0.1):
                                 label = prev_pred['label']
                                 break
 
@@ -92,22 +105,42 @@ def prediction_thread_function(model, label_map):
                     'skeleton': hand_landmarks
                 })
                 current_boxes.append((x_vals, y_vals))
-            
+
             # Update the last prediction time only when we actually make predictions
+            # Input the gesture and connect it to the keybind
             if make_prediction:
-                last_prediction_time = current_time
+                last_prediction_time = current_time 
+                label = current_predictions[0]['label']
+
+                # If gesture is same as before, increment counter
+                if label == current_gesture:
+                    current_gesture_count += 1
+                else:
+                    current_gesture = label
+                    current_gesture_count = 1
+
+                # If count threshold reached and gesture is bound to a key
+                bindings = load_bindings()
+                if (current_gesture_count == gesture_accept_count or current_gesture_count >= 20) and current_gesture in bindings:
+                    print(f"Executing keybind for gesture: {current_gesture} -> {bindings[current_gesture]}")
+                    pyautogui.press(bindings[current_gesture])
+
 
             with prediction_lock:
                 latest_predictions = current_predictions
                 latest_boxes = current_boxes
 
-        # If no hands are detected, we should clear predictions
+
+
+
+
+            # If no hands are detected, we should clear predictions
         elif make_prediction:
             with prediction_lock:
                 latest_predictions = []
                 latest_boxes = []
                 last_prediction_time = current_time
-                
+
         prediction_ready.clear()
 
 
@@ -161,7 +194,7 @@ def prediction_mode():
                 # Always draw the bounding box, regardless of whether we have a label
                 box_color = (0, 255, 0) if label else (255, 0, 0)  # Green if labeled, red if not
                 cv2.rectangle(frame_output, (x_min, y_min), (x_max, y_max), box_color, 2)
-                
+
                 if label:  # Only draw the label text if available
                     cv2.putText(frame_output, label, (x_min, y_min - 10), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, box_color, 2)
@@ -309,7 +342,8 @@ def cli_menu():
         print("1. Data Collection Mode")
         print("2. Training Mode")
         print("3. Prediction Mode")
-        print("4. Exit")
+        print("4. Enter Binding Mode")
+        print("5. Exit")
         choice = input("Select an option (1-4): ")
 
         if choice == '1':
@@ -319,10 +353,81 @@ def cli_menu():
         elif choice == '3':
             prediction_mode()
         elif choice == '4':
+            gesture_binding_cli()
+        elif choice == '5':    
             print("Exiting...")
             break
         else:
             print("Invalid choice. Try again.")
+
+def save_bindings(bindings):
+    with open(BINDINGS_FILE, "w") as file:
+        json.dump(bindings, file, indent=4)
+
+def gesture_binding_cli():
+    bindings = load_bindings()
+
+    while True:
+        print("\n--- Gesture to Keybind CLI ---")
+        print("1. View current bindings (table view)")
+        print("2. Add/Edit a binding")
+        print("3. Delete a binding")
+        print("4. Save and exit")
+        print("5. Exit without saving")
+        choice = input("Choose an option: ")        
+        if choice == "1":
+            if not bindings:
+                print("No bindings found.")
+            else:
+                for gesture, key in bindings.items():
+                    print()
+                    print(f"{gesture} -> {key}")
+        elif choice == "2":
+            gestures = os.listdir(GESTURE_FOLDER)
+            if not gestures:
+                print("No gestures found. Please collect gesture data first.")
+                continue
+
+            print("Available gestures:")
+            for i, g in enumerate(gestures, 1):
+                print(f"{i}. {g}")
+
+            gesture = input("Enter gesture name exactly as shown: ").strip()
+            if gesture not in gestures:
+                print("Invalid gesture name.")
+                continue
+            key = input("Enter key to bind (e.g., left, right, enter): ")
+            bindings[gesture] = key
+            print(f"Bound '{gesture}' to '{key}'")
+        elif choice == "3":
+            if not bindings:
+                print("No bindings to delete.")
+                continue
+
+            print("\nBindings:")
+            for i, gesture in enumerate(bindings.keys(), 1):
+                print(f"{i}. {gesture} -> {bindings[gesture]}")
+
+            try:
+                index = int(input("Select a binding to delete by number: ").strip())
+                gesture = list(bindings.keys())[index - 1]
+                del bindings[gesture]
+                print(f"Deleted binding for '{gesture}'.")
+            except (ValueError, IndexError):
+                print("Invalid selection.")
+
+        elif choice == "4":
+            save_bindings(bindings)
+            print("Bindings saved. Exiting.")
+            break
+
+        elif choice == "5":
+            print("Exiting without saving.")
+            break
+
+        else:
+            print("Invalid option. Try again.")
+
 
 
 if __name__ == "__main__":
