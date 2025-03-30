@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Stream</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <!-- <a href="{{ url_for('contact') }}">Contact</a> -->
+    </div>
+  </div>
+
+  <div class="main">
+    <h1>Webcam Feed</h1>
+    <img src="{{ url_for('video_feed') }}" class="webcam-feed" />
+  </div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gesture Key Bindings</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .bind-container {
+      background: #f9f9f9;
+      padding: 24px 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 480px;
+      margin: 30px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .input-group label {
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .input-group select,
+    .input-group input {
+      padding: 8px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      background-color: #002D74;
+      color: white;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .btn:hover {
+      background-color: #001f4d;
+    }
+
+    table {
+      width: 90%;
+      max-width: 700px;
+      margin: 40px auto;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    .delete-btn {
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background-color: #cc0000;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ Navbar -->
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Penn State Logo" />
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <!-- <a href="{{ url_for('contact') }}">Contact</a> -->
+    </div>
+  </div>
+
+  <!-- ✅ Page Content -->
+  <div class="main">
+    <h1>Gesture Key Bindings</h1>
+
+    <!-- ✅ Bind Form -->
+    <div class="bind-container">
+      <form id="bind-form" method="POST" action="/bind_gesture">
+        <div class="input-group">
+          <label for="gesture">Select Gesture:</label>
+          <select id="gesture" name="gesture">
+            {% for gesture in gestures_list %}
+              <option value="{{ gesture }}">{{ gesture }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="key">Press a Key:</label>
+          <input type="text" id="key" name="key" readonly required placeholder="Press any key..." />
+        </div>
+
+        <button type="submit" class="btn">Bind</button>
+      </form>
+    </div>
+
+    <!-- ✅ Bindings Table -->
+    <h2>Current Bindings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Gesture</th>
+          <th>Key</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gesture, key in bindings.items() %}
+        <tr>
+          <td>{{ gesture }}</td>
+          <td>{{ key }}</td>
+          <td>
+            <form method="POST" action="/delete_binding">
+              <input type="hidden" name="gesture" value="{{ gesture }}">
+              <button type="submit" class="delete-btn">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <script>
+    const keyMap = {
+      "ArrowUp": "up",
+      "ArrowDown": "down",
+      "ArrowLeft": "left",
+      "ArrowRight": "right",
+      " ": "space",
+      "Enter": "enter",
+      "Backspace": "backspace",
+      "Tab": "tab"
+    };
+  
+    document.addEventListener('keydown', function (e) {
+      const input = document.getElementById("key");
+  
+      // Only update the field, don't submit
+      if (input && document.activeElement !== input) {
+        let key = keyMap[e.key] || e.key;
+        input.value = key;
+      }
+    });
+  </script>  
+
+</body>
+</html>

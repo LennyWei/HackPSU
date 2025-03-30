@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Gestures</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 64px;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    #prediction-output {
+      font-size: 24px;
+      font-weight: 600;
+      color: #002D74;
+      margin-bottom: 20px;
+    }
+
+    .webcam-feed {
+      width: 800px;
+      max-width: 90%;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ Navbar (optional if you want it consistent) -->
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Penn State Logo" />
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <!-- <a href="{{ url_for('contact') }}">Contact</a> -->
+    </div>
+  </div>
+
+  <!-- ✅ Main Test Section -->
+  <div class="main">
+    <h1>Live Gesture Prediction</h1>
+
+    <!-- 🔮 Prediction output ABOVE video -->
+    <p id="prediction-output">Prediction: ...</p>
+
+    <img src="{{ url_for('video_feed') }}" class="webcam-feed" />
+  </div>
+
+  <!-- 🔄 Update prediction from backend -->
+  <script>
+    function fetchPrediction() {
+      fetch("/get_prediction")
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("prediction-output").textContent = "Prediction: " + data.prediction;
+        });
+    }
+
+    setInterval(fetchPrediction, 300); // update every 300ms
+  </script>
+</body>
+</html>

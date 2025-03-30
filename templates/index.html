@@ -1,0 +1,65 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesture Recognition</title>
+    <link rel = "stylesheet" href = "styles.css">
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gesture Recognition</h1>
+
+         Video Feed 
+    <h2>Live Video Feed</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480" />
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gesture AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Penn State Logo">
+    </a>      
+    <div class="nav-links">
+      <a href="{{ url_for('train') }}">Train</a>
+      <a href="{{ url_for('test') }}">Test</a>
+      <a href="{{ url_for('data_collection') }}">Data Collection</a>
+      <a href="{{ url_for('gestures') }}">Gestures</a>
+      <!-- <a href="{{ url_for('contact') }}">Contact</a> -->
+      <div class="nav-buttons">
+        <!-- <button class="sign-in">Sign in</button>
+        <button class="register">Register</button> -->
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <img src="{{ url_for('static', filename='home.png') }}" alt="Gesture AI Image">
+    <h1>Gesture AI</h1>
+    <p>
+      Train, Bind, Predict. GestureAI allows you to use your webcam, 
+      a chronically underused part of every computer, 
+      to bind hand gestures to any keyboard & mouse action.
+
+      Train - This is where you will need to train the model.
+      Test - In the Test tab you can see what gestures are being recognized.
+      Data Collection - Here you can train yout OWN model! simply put up a gesture and fill in the frames and delay then press collect!
+      Gestures - You can bind your gestures to your keyboard in this tab. You will also be able to delete your gestures here.
+    </p>
+  </div>
+</body>
+</html>
+

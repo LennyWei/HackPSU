@@ -1,0 +1,31 @@
+<!-- templates/train.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Train Model</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Train Gesture Recognition Model</h1>
+    <button onclick="trainModel()">Start Training</button>
+    <p id="status">Status: Waiting...</p>
+
+    <script>
+        function trainModel() {
+            document.getElementById("status").textContent = "Training started...";
+            fetch("/train_model", {
+                method: "POST"
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("status").textContent = data.message;
+            })
+            .catch(err => {
+                document.getElementById("status").textContent = "Error occurred";
+                console.error(err);
+            });
+        }
+    </script>
+</body>
+</html>
